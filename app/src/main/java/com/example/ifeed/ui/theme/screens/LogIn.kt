@@ -1,5 +1,7 @@
 package com.example.ifeed.ui.theme.screens
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -26,8 +28,11 @@ import com.example.ifeed.ui.theme.components.CustomFilledButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedTextField
 import com.example.ifeed.ui.theme.navigation.Locations
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun LogInUi(
     modifier: Modifier = Modifier,
@@ -132,7 +137,11 @@ fun LogInUi(
             modifier = modifier,
             buttonText = "Create a new account"
         ) {
-            navController.navigate(route = Locations.SignUp.name, navOptions = navOptions)
+            coroutineScope.launch {
+                navController.navigate(route = Locations.SignUp.name, navOptions = navOptions)
+                delay(500L)
+                logInViewModel.resetState()
+            }
         }
     }
 }
