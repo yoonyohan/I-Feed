@@ -1,5 +1,6 @@
 package com.example.ifeed.data
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -22,6 +23,7 @@ class OfflineRepository(
 
     override suspend fun loggedIn(userId: Int, isLoggedIn: Boolean) {
         withContext(Dispatchers.IO) {
+            Log.d("OfflineRepository", " Offline Repository - The user id : $userId and is logged in $isLoggedIn") // Good
             userDao.loggedIn(userId, isLoggedIn)
         }
     }
