@@ -1,6 +1,7 @@
  package com.example.ifeed
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,7 +21,9 @@ import com.example.ifeed.ui.theme.navigation.Navigation
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Navigation()
+                    Navigation {
+                        Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }

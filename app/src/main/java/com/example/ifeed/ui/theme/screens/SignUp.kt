@@ -11,27 +11,39 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.ifeed.business.SignUpState
+import com.example.ifeed.business.SignUpViewModel
 import com.example.ifeed.ui.theme.components.CustomFilledButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedTextField
 import com.example.ifeed.ui.theme.navigation.Locations
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun SignUpUi(
     modifier: Modifier = Modifier,
-    navController: NavHostController
+    navController: NavHostController,
+    signUpViewModel: SignUpViewModel,
+    alert: (String) -> Unit
 ) {
-    var userName: String? by rememberSaveable { mutableStateOf("") }
-    var password: String? by rememberSaveable { mutableStateOf("") }
-    var confirmPassword: String? by rememberSaveable { mutableStateOf("") }
+    val signUpState by signUpViewModel.state.collectAsState(initial = SignUpState())
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(signUpState.alert) {
+        signUpState.alert?.let {
+            alert(it)
+        }
+    }
 
     Column(
         modifier = modifier
@@ -40,11 +52,11 @@ fun SignUpUi(
         verticalArrangement = Arrangement.Center
     ) {
         CustomOutLinedTextField(
-            value = userName ?: "",
+            value = signUpState.userName,
             placeHolder = "Email or Phone number",
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
-                imeAction = if (userName?.length!! > 3) ImeAction.Done else ImeAction.None
+                imeAction = if (signUpState.userName.length > 3) ImeAction.Done else ImeAction.None
             ),
             keyboardActions = KeyboardActions(
                 onNext = {}
@@ -57,17 +69,19 @@ fun SignUpUi(
                 errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
             )
         ) {
-            userName = it
+            coroutineScope.launch(Dispatchers.IO) {
+                signUpViewModel.addUserNameToState(it)
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomOutLinedTextField(
-            value = password ?: "",
+            value = signUpState.password,
             placeHolder = "Password",
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
-                imeAction = if (password?.length!! > 3) ImeAction.Done else ImeAction.None
+                imeAction = if (signUpState.password.length > 3) ImeAction.Done else ImeAction.None
             ),
             keyboardActions = KeyboardActions(
                 onNext = {}
@@ -80,17 +94,19 @@ fun SignUpUi(
                 errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
             )
         ) {
-            password = it
+            coroutineScope.launch(Dispatchers.IO) {
+                signUpViewModel.addPasswordToState(it)
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomOutLinedTextField(
-            value = confirmPassword ?: "",
+            value = signUpState.confirmPassword,
             placeHolder = "Confirm password",
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
-                imeAction = if (confirmPassword?.length!! > 3) ImeAction.Done else ImeAction.None
+                imeAction = if (signUpState.confirmPassword.length > 3) ImeAction.Done else ImeAction.None
             ),
             keyboardActions = KeyboardActions(
                 onNext = {}
@@ -103,13 +119,19 @@ fun SignUpUi(
                 errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
             )
         ) {
-            confirmPassword = it
+            coroutineScope.launch(Dispatchers.IO) {
+                signUpViewModel.addConfirmPasswordToState(it)
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomFilledButton(buttonText = "Sign Up") {
-            navController.navigate(route = Locations.Feed.name)
+            coroutineScope.launch(Dispatchers.IO) {
+                signUpViewModel.accountCreation()
+                delay(1000)
+                navController.navigate(route = Locations.LogIn.name)
+            }
         }
     }
 }
