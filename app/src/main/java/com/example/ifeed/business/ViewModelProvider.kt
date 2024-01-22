@@ -9,11 +9,17 @@ import com.example.ifeed.application.FeedApplication
 object Provider {
     val factory = viewModelFactory {
         initializer {
-            LogInViewModel(feedApplication().feedAppContainer.offlineRepository)
+            LogInViewModel(
+                feedApplication().feedAppContainer.offlineRepository,
+                feedApplication().firebaseAuth
+            )
         }
 
         initializer {
-            SignUpViewModel(feedApplication().feedAppContainer.offlineRepository)
+            SignUpViewModel(
+                feedApplication().feedAppContainer.offlineRepository,
+                feedApplication().firebaseAuth
+            )
         }
     }
 }

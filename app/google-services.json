@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "924474843772",
+    "project_id": "i-feed-post",
+    "storage_bucket": "i-feed-post.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924474843772:android:55d3122ee89fa8d98d5ff9",
+        "android_client_info": {
+          "package_name": "com.example.ifeed"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCJB6g3gJo86TzpuZmpeBjEzxGYyM7fsQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

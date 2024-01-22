@@ -1,5 +1,7 @@
 package com.example.ifeed.ui.theme.screens
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun SignUpUi(
     modifier: Modifier = Modifier,
@@ -41,7 +44,17 @@ fun SignUpUi(
 
     LaunchedEffect(signUpState.alert) {
         signUpState.alert?.let {
-            alert(it)
+            if (it.isNotEmpty()) {
+                alert(it)
+            }
+        }
+    }
+
+    LaunchedEffect(signUpState.accountCreationSuccess) {
+        signUpState.accountCreationSuccess.let {
+            if (it) {
+                navController.navigate(Locations.LogIn.name)
+            }
         }
     }
 
@@ -109,7 +122,11 @@ fun SignUpUi(
                 imeAction = if (signUpState.confirmPassword.length > 3) ImeAction.Done else ImeAction.None
             ),
             keyboardActions = KeyboardActions(
-                onNext = {}
+                onDone = {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        signUpViewModel.accountCreation()
+                    }
+                }
             ),
             colors = TextFieldDefaults.colors(
                 focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -129,8 +146,6 @@ fun SignUpUi(
         CustomFilledButton(buttonText = "Sign Up") {
             coroutineScope.launch(Dispatchers.IO) {
                 signUpViewModel.accountCreation()
-                delay(1000)
-                navController.navigate(route = Locations.LogIn.name)
             }
         }
     }

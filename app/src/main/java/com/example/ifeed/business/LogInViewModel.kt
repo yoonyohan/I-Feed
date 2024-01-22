@@ -1,9 +1,18 @@
 package com.example.ifeed.business
 
+import android.app.RecoverableSecurityException
+import android.database.StaleDataException
+import android.database.sqlite.SQLiteDiskIOException
+import android.database.sqlite.SQLiteException
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ifeed.data.Repository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.sql.SQLException
 
 data class LogInState(
     val userName: String = "",
@@ -21,7 +31,8 @@ data class LogInState(
 )
 
 class LogInViewModel(
-    private val offlineRepository: Repository
+    private val offlineRepository: Repository,
+    private val firebaseAuth: FirebaseAuth
 ): ViewModel() {
 
     private val _stateFlow = MutableStateFlow(LogInState())
@@ -44,6 +55,7 @@ class LogInViewModel(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     fun logIn() {
         viewModelScope.launch {
             if (_stateFlow.value.userName.isEmpty() && _stateFlow.value.password.isEmpty()) {
@@ -55,55 +67,60 @@ class LogInViewModel(
                 }
             } else {
                 try {
-                    val userNameAndPasswordInDataBase = withContext(Dispatchers.IO) {
-                        offlineRepository.getUserByName(_stateFlow.value.userName)
-                    }
-                    val userNameInDataBase = userNameAndPasswordInDataBase?.userName
-
-                    if (userNameInDataBase == null) {
-                        _stateFlow.update {
-                            it.copy(
-                                alert = "Account doesn't exist",
-                                isLoggedIn = false
-                            )
-                        }
-                    } else {
-                        val passwordInDataBase = userNameAndPasswordInDataBase.password
-
-                        if (passwordInDataBase == _stateFlow.value.password) {
-                            _stateFlow.update {
-                                it.copy(
-                                    alert = "Welcome back!",
-                                    isLoggedIn = true,
-                                )
+                    withContext(Dispatchers.IO) {
+                        firebaseAuth.signInWithEmailAndPassword(
+                            _stateFlow.value.userName,
+                            _stateFlow.value.password
+                        ).addOnCompleteListener {
+                                task ->
+                            if (task.isSuccessful) {
+                                _stateFlow.update {
+                                    it.copy(
+                                        alert = "Welcome back!",
+                                        isLoggedIn = true,
+                                    )
+                                }
+                            }
+                        }.addOnFailureListener { exception ->
+                            // Handle specific login exceptions
+                            val errorMessage = when (exception) {
+                                is FirebaseAuthInvalidUserException -> "User not found"
+                                is FirebaseAuthInvalidCredentialsException -> "Invalid password"
+                                else -> "Authentication failed: ${exception.message ?: "Something went wrong"}"
                             }
 
-                            delay(500L)
                             _stateFlow.update {
                                 it.copy(
-                                    alert = "",
-                                    userName = "",
-                                    password = ""
-                                )
-                            }
-                        } else {
-                            _stateFlow.update {
-                                it.copy(
-                                    alert = "Password doesn't match",
-                                    isLoggedIn = false
+                                    alert = errorMessage,
+                                    isLoggedIn = false,
                                 )
                             }
                         }
                     }
+
                 } catch (e: Exception) {
+                    // Handle other exceptions if needed
                     _stateFlow.update {
                         it.copy(
-                            alert = "Error fetching user Data",
-                            isLoggedIn = false
+                            alert = "Something went wrong",
+                            isLoggedIn = false,
                         )
                     }
-                    Log.e("LogInViewModelScope", "Fetching data from data base but it makes an error - $e")
                 }
+            }
+        }
+    }
+
+    fun resetState() {
+        viewModelScope.launch {
+            _stateFlow.update {
+                it.copy(
+                    userName = "",
+                    password = "",
+                    alert = null,
+                    isEmpty = false,
+                    isLoggedIn = false
+                )
             }
         }
     }
