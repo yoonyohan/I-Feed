@@ -10,14 +10,28 @@ object Provider {
     val factory = viewModelFactory {
         initializer {
             LogInViewModel(
-                feedApplication().feedAppContainer.offlineRepository,
+                feedApplication().feedAppContainer.firebaseRepository,
                 feedApplication().firebaseAuth
             )
         }
 
         initializer {
             SignUpViewModel(
-                feedApplication().feedAppContainer.offlineRepository,
+                feedApplication().feedAppContainer.firebaseRepository,
+                feedApplication().firebaseAuth
+            )
+        }
+
+        initializer {
+            AddNewPostViewModel(
+                feedApplication().feedAppContainer.firebaseRepository,
+                feedApplication().firebaseAuth
+            )
+        }
+
+        initializer {
+            FeedViewModel(
+                feedApplication().feedAppContainer.firebaseRepository,
                 feedApplication().firebaseAuth
             )
         }

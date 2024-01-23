@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,7 +29,6 @@ import com.example.ifeed.ui.theme.components.CustomFilledButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedTextField
 import com.example.ifeed.ui.theme.navigation.Locations
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -42,20 +42,23 @@ fun SignUpUi(
     val signUpState by signUpViewModel.state.collectAsState(initial = SignUpState())
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(signUpState.alert) {
+    DisposableEffect(signUpState.alert) {
         signUpState.alert?.let {
             if (it.isNotEmpty()) {
                 alert(it)
             }
         }
+        onDispose {  }
     }
 
-    LaunchedEffect(signUpState.accountCreationSuccess) {
+    DisposableEffect(signUpState.accountCreationSuccess) {
         signUpState.accountCreationSuccess.let {
             if (it) {
                 navController.navigate(Locations.LogIn.name)
             }
         }
+
+        onDispose {  }
     }
 
     Column(
