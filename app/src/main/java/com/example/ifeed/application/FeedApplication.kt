@@ -1,7 +1,6 @@
 package com.example.ifeed.application
 
 import android.app.Application
-import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 
 class FeedApplication: Application() {
@@ -10,7 +9,7 @@ class FeedApplication: Application() {
 
     override fun onCreate() {
         super.onCreate()
-        feedAppContainer = FeedAppContainer(this)
+        feedAppContainer = FeedAppContainer(FirebaseAuth.getInstance())
         firebaseAuth = FirebaseAuth.getInstance()
     }
 }

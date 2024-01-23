@@ -1,32 +1,19 @@
 package com.example.ifeed.business
 
-import android.app.RecoverableSecurityException
-import android.database.StaleDataException
-import android.database.sqlite.SQLiteDiskIOException
-import android.database.sqlite.SQLiteException
-import android.database.sqlite.SQLiteFullException
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ifeed.data.Repository
-import com.example.ifeed.data.User
-import com.example.ifeed.data.UserNameAndPassword
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
-import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.sql.SQLException
 
 data class SignUpState(
     val userName: String = "",

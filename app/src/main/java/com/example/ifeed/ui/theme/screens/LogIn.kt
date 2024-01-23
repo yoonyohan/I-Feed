@@ -13,11 +13,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -50,19 +52,22 @@ fun LogInUi(
         .setPopExitAnim(androidx.navigation.ui.R.anim.nav_default_pop_exit_anim)
         .build()
 
-    LaunchedEffect(logInState.alert) {
+    DisposableEffect(logInState.alert) {
         logInState.alert?.let {
             if (it.isNotEmpty()) {
                 alert(it)
             }
         }
+        onDispose {  }
     }
 
-    LaunchedEffect(logInState.isLoggedIn) {
-        if (logInState.isLoggedIn) {
+    DisposableEffect(logInState.isLoggedIn) {
+        if(logInState.isLoggedIn) {
             navController.navigate(Locations.Feed.name)
         }
+        onDispose {  }
     }
+
 
     Column(
         modifier = modifier
@@ -137,7 +142,7 @@ fun LogInUi(
             modifier = modifier,
             buttonText = "Create a new account"
         ) {
-            coroutineScope.launch {
+            coroutineScope.launch(Dispatchers.Main) {
                 navController.navigate(route = Locations.SignUp.name, navOptions = navOptions)
                 delay(500L)
                 logInViewModel.resetState()
