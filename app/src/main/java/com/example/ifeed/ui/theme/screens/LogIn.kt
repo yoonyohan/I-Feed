@@ -11,20 +11,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
+import com.example.ifeed.R
 import com.example.ifeed.business.LogInViewModel
 import com.example.ifeed.ui.theme.components.CustomFilledButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedButton
@@ -43,7 +44,6 @@ fun LogInUi(
     alert: (String) -> Unit
 ) {
     val logInState by logInViewModel.state.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
 
     val navOptions = NavOptions.Builder()
         .setEnterAnim(androidx.navigation.ui.R.anim.nav_default_enter_anim)
@@ -52,9 +52,17 @@ fun LogInUi(
         .setPopExitAnim(androidx.navigation.ui.R.anim.nav_default_pop_exit_anim)
         .build()
 
+    val textFieldColors = TextFieldDefaults.colors(
+        focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+        unfocusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+        unfocusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
+        focusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
+        errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+    )
+
     DisposableEffect(logInState.alert) {
-        logInState.alert?.let {
-            if (it.isNotEmpty()) {
+        logInState.alert.let {
+            if (it?.isNotEmpty() == true) {
                 alert(it)
             }
         }
@@ -77,61 +85,18 @@ fun LogInUi(
     ){
         Spacer(modifier = Modifier.height(220.dp))
 
-        CustomOutLinedTextField(
-            value = logInState.userName,
-            placeHolder = "Email or phone number",
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = if (logInState.userName.length > 3) ImeAction.Next else ImeAction.None
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = null
-            ),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                focusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-            ),
-        ) {
-            coroutineScope.launch {
-                logInViewModel.userNameToState(it)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        CustomOutLinedTextField(
-            value = logInState.password,
-            placeHolder = "Password",
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = if (logInState.password.length > 3) ImeAction.Done else ImeAction.None
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = {
-                    navController.navigate(route = Locations.Feed.name)
-                }
-            ),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                focusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-            ),
-        ) {
-            coroutineScope.launch {
-                logInViewModel.passwordToState(it)
-            }
-        }
+        LogInInputFields(
+            modifier = modifier,
+            navController = navController,
+            logInViewModel =  logInViewModel,
+            textFieldColors = textFieldColors
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomFilledButton(
             modifier = modifier,
-            buttonText = "Login"
+            buttonText = stringResource(R.string.login)
         ) {
             logInViewModel.logIn()
         }
@@ -140,13 +105,54 @@ fun LogInUi(
 
         CustomOutLinedButton(
             modifier = modifier,
-            buttonText = "Create a new account"
+            buttonText = stringResource(R.string.create_a_new_account)
         ) {
-            coroutineScope.launch(Dispatchers.Main) {
-                navController.navigate(route = Locations.SignUp.name, navOptions = navOptions)
-                delay(500L)
-                logInViewModel.resetState()
-            }
+            navController.navigate(route = Locations.NameSetup.name, navOptions = navOptions)
+            logInViewModel.resetState()
         }
+    }
+}
+
+@Composable
+fun LogInInputFields(
+    modifier: Modifier = Modifier,
+    navController: NavHostController,
+    logInViewModel: LogInViewModel,
+    textFieldColors: TextFieldColors
+) {
+    val state by logInViewModel.state.collectAsState()
+
+    CustomOutLinedTextField(
+        value = state.userName,
+        placeHolder = stringResource(R.string.email_or_phone_number),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Text,
+            imeAction = if (state.userName.length > 3) ImeAction.Next else ImeAction.None
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = null
+        ),
+        colors = textFieldColors,
+    ) {
+        logInViewModel.userNameToState(it)
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    CustomOutLinedTextField(
+        value = state.password,
+        placeHolder = stringResource(id = R.string.password),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Text,
+            imeAction = if (state.password.length > 3) ImeAction.Done else ImeAction.None
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = {
+                navController.navigate(route = Locations.Feed.name)
+            }
+        ),
+        colors = textFieldColors,
+    ) {
+        logInViewModel.passwordToState(it)
     }
 }

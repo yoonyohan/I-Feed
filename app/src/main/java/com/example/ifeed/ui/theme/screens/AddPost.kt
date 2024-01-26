@@ -15,15 +15,15 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.ifeed.R
 import com.example.ifeed.business.AddNewPostViewModel
 import com.example.ifeed.ui.theme.components.CustomFilledButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedTextField
@@ -39,7 +39,6 @@ fun AddPostUi(
     alert: (String) -> Unit
 ) {
     val state by addNewPostViewModel.state.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(state.alert) {
         state.alert?.let {
@@ -65,85 +64,57 @@ fun AddPostUi(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        CustomOutLinedTextField(
-            value = state.title,
-            placeHolder = "Good Morning",
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = if (state.title.length > 3) ImeAction.Next else ImeAction.None
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = null
-            ),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                focusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-            ),
-        ) { coroutineScope.launch(Dispatchers.IO) {
-            addNewPostViewModel.addTitleToState(it)
-        } }
+        AddPostInputFields(
+            modifier = modifier,
+            addPostViewModel = addNewPostViewModel
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        CustomOutLinedTextField(
-            value = state.description,
-            placeHolder = "So, Today is my birthday...",
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = if (state.description.length > 3) ImeAction.Next else ImeAction.None
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = null
-            ),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                focusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-            ),
-            singleLine = false,
-            modifier = Modifier.height(200.dp)
-        ) {
-            coroutineScope.launch(Dispatchers.IO) {
-                addNewPostViewModel.addDescriptionToState(it)
-            }
-        }
+        PostButton(
+            modifier = modifier,
+            addNewPostViewModel = addNewPostViewModel
+        )
+    }
+}
 
-        Spacer(modifier = Modifier.height(12.dp))
+@Composable
+fun AddPostInputFields(
+    modifier: Modifier = Modifier,
+    addPostViewModel: AddNewPostViewModel
+) {
+    val state by addPostViewModel.state.collectAsState()
 
-        CustomOutLinedTextField(
-            value = state.topic,
-            placeHolder = "Daily routines",
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = if (state.topic.length > 3) ImeAction.Next else ImeAction.None
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = null
-            ),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                focusedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
-                errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-            ),
-        ) {
-            coroutineScope.launch(Dispatchers.IO) {
-                addNewPostViewModel.addTopicToState(it)
-            }
-        }
+    CustomOutLinedTextField(
+        value = state.content,
+        placeHolder = stringResource(R.string.add_post_placeholder),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Text,
+            imeAction = if (state.content.length > 3) ImeAction.Done else ImeAction.None
+        ),
+        keyboardActions = KeyboardActions(
+            onDone = {}
+        ),
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            unfocusedContainerColor = MaterialTheme.colorScheme.background,
+            focusedContainerColor = MaterialTheme.colorScheme.background,
+            errorIndicatorColor = Color.Transparent,
+        ),
+        singleLine = false,
+        modifier = modifier.height(300.dp)
+    ) {
+        addPostViewModel.addContentToState(it)
+    }
+}
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        CustomFilledButton(buttonText = "Post") {
-            coroutineScope.launch(Dispatchers.IO) {
-                addNewPostViewModel.addNewPost()
-            }
-        }
+@Composable
+fun PostButton(
+    modifier: Modifier = Modifier,
+    addNewPostViewModel: AddNewPostViewModel,
+) {
+    CustomFilledButton(buttonText = "Post", modifier = modifier) {
+        addNewPostViewModel.writePost()
     }
 }

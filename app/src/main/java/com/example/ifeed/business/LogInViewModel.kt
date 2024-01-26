@@ -2,6 +2,8 @@ package com.example.ifeed.business
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ifeed.data.Repository
@@ -31,6 +33,14 @@ class LogInViewModel(
     private val _stateFlow = MutableStateFlow(LogInState())
     val state = _stateFlow.asStateFlow()
 
+    init {
+        _stateFlow.update {
+            it.copy(
+                isLoggedIn = firebaseAuth.currentUser != null
+            )
+        }
+    }
+
 
     fun userNameToState(value: String) {
         _stateFlow.update {
@@ -39,7 +49,6 @@ class LogInViewModel(
             )
         }
     }
-
     fun passwordToState(value: String) {
         _stateFlow.update {
             it.copy(
@@ -110,7 +119,7 @@ class LogInViewModel(
                 it.copy(
                     userName = "",
                     password = "",
-                    alert = null,
+                    alert = "",
                     isEmpty = false,
                     isLoggedIn = false
                 )
