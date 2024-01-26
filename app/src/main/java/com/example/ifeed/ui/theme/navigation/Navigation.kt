@@ -15,9 +15,12 @@ import com.example.ifeed.business.LogInViewModel
 import com.example.ifeed.business.Provider
 import com.example.ifeed.business.SignUpViewModel
 import com.example.ifeed.ui.theme.screens.AddPostUi
+import com.example.ifeed.ui.theme.screens.EmailOrNumberUi
 import com.example.ifeed.ui.theme.screens.FeedUi
 import com.example.ifeed.ui.theme.screens.LogInUi
-import com.example.ifeed.ui.theme.screens.SignUpUi
+import com.example.ifeed.ui.theme.screens.MessageUi
+import com.example.ifeed.ui.theme.screens.NameSetupUi
+import com.example.ifeed.ui.theme.screens.PasswordSetupUi
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @Composable
@@ -40,12 +43,28 @@ fun Navigation(
             )
         }
 
-        this.composable(route = Locations.SignUp.name) {
-            SignUpUi(
+        this.composable(route = Locations.NameSetup.name) {
+            NameSetupUi(
+                modifier = modifier,
+                navController = navController,
+                signUpViewModel = signUpViewModel
+            )
+        }
+
+        this.composable(route = Locations.PasswordSetup.name) {
+            PasswordSetupUi(
                 modifier = modifier,
                 navController = navController,
                 signUpViewModel = signUpViewModel
             ) { alert(it) }
+        }
+
+        this.composable(route = Locations.EmailOrNumber.name) {
+            EmailOrNumberUi(
+                modifier = modifier,
+                navController = navController,
+                signUpViewModel = signUpViewModel
+            )
         }
 
         this.composable(route = Locations.Feed.name) {
@@ -62,6 +81,13 @@ fun Navigation(
                 addNewPostViewModel = addNewPostViewModel,
                 navController = navController
             ) { alert(it) }
+        }
+
+        this.composable(route = Locations.Messages.name) {
+            MessageUi(
+                modifier = modifier,
+                navController = navController
+            ) {}
         }
     }
 }

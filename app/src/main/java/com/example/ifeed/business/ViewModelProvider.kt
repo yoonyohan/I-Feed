@@ -17,15 +17,17 @@ object Provider {
 
         initializer {
             SignUpViewModel(
-                feedApplication().feedAppContainer.firebaseRepository,
-                feedApplication().firebaseAuth
+                feedApplication().firebaseAuth,
+                feedApplication().firestore
             )
         }
 
         initializer {
             AddNewPostViewModel(
                 feedApplication().feedAppContainer.firebaseRepository,
-                feedApplication().firebaseAuth
+                feedApplication().firebaseAuth,
+                feedApplication().firebaseDatabase,
+                feedApplication().firestore
             )
         }
 
@@ -33,6 +35,13 @@ object Provider {
             FeedViewModel(
                 feedApplication().feedAppContainer.firebaseRepository,
                 feedApplication().firebaseAuth
+            )
+        }
+
+        initializer {
+            MessageViewModel(
+                feedApplication().firebaseAuth,
+                feedApplication().feedAppContainer.firebaseRepository
             )
         }
     }

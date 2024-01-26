@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="screen_horizontal_padding">27dp</dimen>
+    <dimen name="screen_vertical_padding">10dp</dimen>
+    <dimen name="spacer_10_height">10dp</dimen>
+    <dimen name="spacer_20_height">20dp</dimen>
+    <dimen name="spacer_100_height">100dp</dimen>
+    <dimen name="row_text_field_padding">5dp</dimen>
+</resources>

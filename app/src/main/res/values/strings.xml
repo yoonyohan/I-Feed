@@ -1,3 +1,22 @@
 <resources>
     <string name="app_name">i Feed</string>
+    <string name="enter_your_real_name">Enter your real name</string>
+    <string name="name_setup_description">Please enter your real name you are using in your real life</string>
+    <string name="first_name">First name</string>
+    <string name="last_name">Last name</string>
+    <string name="email_or_password">Enter valid email address or Phone number</string>
+    <string name="use_phone_number">Use Phone number</string>
+    <string name="use_email_address">Use Email address</string>
+    <string name="Contact_Setup_header">Please enter your email address or phone number you are using in real life</string>
+    <string name="phone_number">Phone number</string>
+    <string name="email_address">Email address</string>
+    <string name="continue_buuton">Continue</string>
+    <string name="sign_up_and_continue">Sign Up and Continue</string>
+    <string name="password">Password</string>
+    <string name="Password_setup_header">Create a Strong password</string>
+    <string name="password_setup_description">You can create a unique password by using numbers, letters and symbols. Emojis are not allowed here</string>
+    <string name="email_or_phone_number">Email or phone number</string>
+    <string name="create_a_new_account">Create a new account</string>
+    <string name="login">Login</string>
+    <string name="add_post_placeholder">Tell us, What is in your mind?..</string>
 </resources>
