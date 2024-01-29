@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.ifeed.R
 import com.example.ifeed.business.SignUpViewModel
@@ -114,7 +115,7 @@ fun ContactInputField(
     navController: NavHostController,
     signUpViewModel: SignUpViewModel
 ) {
-    val state by signUpViewModel.state.collectAsState()
+    val state by signUpViewModel.state.collectAsStateWithLifecycle()
 
     CustomOutLinedTextField(
         value = if(state.emailAddressOn) {
@@ -164,7 +165,7 @@ fun ContactContinue(
     navController: NavHostController,
     signUpViewModel: SignUpViewModel
 ) {
-    val state by signUpViewModel.state.collectAsState()
+    val state by signUpViewModel.state.collectAsStateWithLifecycle()
 
     CustomFilledButton(
         buttonText = "Continue",
@@ -181,7 +182,7 @@ fun ContactChosen(
     modifier: Modifier = Modifier,
     signUpViewModel: SignUpViewModel
 ) {
-    val state by signUpViewModel.state.collectAsState()
+    val state by signUpViewModel.state.collectAsStateWithLifecycle()
 
     if (state.phoneNumberOn) {
         CustomText(
