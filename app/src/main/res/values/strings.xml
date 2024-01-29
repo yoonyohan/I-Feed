@@ -19,4 +19,8 @@
     <string name="create_a_new_account">Create a new account</string>
     <string name="login">Login</string>
     <string name="add_post_placeholder">Tell us, What is in your mind?..</string>
+    <string name="problem_with_creating_an_account">Problem with creating an account</string>
+    <string name="successfully_created_an_account">Successfully created an account</string>
+    <string name="let_s_finish_account_later">Let\'s finish account later</string>
+    <string name="error_uploading_image">Error uploading image</string>
 </resources>

@@ -14,15 +14,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
 import com.example.ifeed.R
@@ -31,9 +30,6 @@ import com.example.ifeed.ui.theme.components.CustomFilledButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedTextField
 import com.example.ifeed.ui.theme.navigation.Locations
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @Composable
@@ -43,7 +39,14 @@ fun LogInUi(
     logInViewModel: LogInViewModel,
     alert: (String) -> Unit
 ) {
-    val logInState by logInViewModel.state.collectAsState()
+    val logInState by logInViewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(logInState.alert) {
+        if (logInState.alert.isNotEmpty()) {
+            alert(logInState.alert)
+            logInViewModel.resetAlert() // Reset flag for next reaction
+        }
+    }
 
     val navOptions = NavOptions.Builder()
         .setEnterAnim(androidx.navigation.ui.R.anim.nav_default_enter_anim)
@@ -60,20 +63,10 @@ fun LogInUi(
         errorIndicatorColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
     )
 
-    DisposableEffect(logInState.alert) {
-        logInState.alert.let {
-            if (it?.isNotEmpty() == true) {
-                alert(it)
-            }
-        }
-        onDispose {  }
-    }
-
-    DisposableEffect(logInState.isLoggedIn) {
+    LaunchedEffect(logInState.isLoggedIn) {
         if(logInState.isLoggedIn) {
             navController.navigate(Locations.Feed.name)
         }
-        onDispose {  }
     }
 
 
@@ -120,9 +113,10 @@ fun LogInInputFields(
     logInViewModel: LogInViewModel,
     textFieldColors: TextFieldColors
 ) {
-    val state by logInViewModel.state.collectAsState()
+    val state by logInViewModel.state.collectAsStateWithLifecycle()
 
     CustomOutLinedTextField(
+        modifier = modifier,
         value = state.userName,
         placeHolder = stringResource(R.string.email_or_phone_number),
         keyboardOptions = KeyboardOptions(
@@ -140,6 +134,7 @@ fun LogInInputFields(
     Spacer(modifier = Modifier.height(12.dp))
 
     CustomOutLinedTextField(
+        modifier = modifier,
         value = state.password,
         placeHolder = stringResource(id = R.string.password),
         keyboardOptions = KeyboardOptions(

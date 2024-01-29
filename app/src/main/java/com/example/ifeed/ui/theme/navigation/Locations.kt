@@ -7,5 +7,7 @@ enum class Locations {
     EmailOrNumber,
     Feed,
     Post,
-    Messages
+    Messages,
+    Notifications,
+    Account
 }

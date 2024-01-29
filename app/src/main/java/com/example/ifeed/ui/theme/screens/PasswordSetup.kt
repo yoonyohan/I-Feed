@@ -1,6 +1,7 @@
 package com.example.ifeed.ui.theme.screens
 
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -28,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.ifeed.R
 import com.example.ifeed.business.SignUpViewModel
@@ -46,22 +49,25 @@ fun PasswordSetupUi(
     signUpViewModel: SignUpViewModel,
     alert: (String) -> Unit
 ) {
-    val state by signUpViewModel.state.collectAsState()
+    val state by signUpViewModel.state.collectAsStateWithLifecycle()
 
     BackHandler(enabled = true) {
         signUpViewModel.resetPassword()
         navController.popBackStack()
     }
 
-    DisposableEffect(state.alert) {
-        state.alert.let {
-            if (it.isNotEmpty()) {
-                alert(it)
-            }
+    LaunchedEffect(state.alert) {
+        if (state.alert.isNotEmpty()) {
+            alert(state.alert)
+            signUpViewModel.resetAlert() // Reset flag for next reaction
         }
-
-        onDispose {  }
     }
+
+    LaunchedEffect(key1 = state.accountCreationSuccess, block = {
+        if (state.accountCreationSuccess) {
+            navController.navigate(route = Locations.LogIn.name)
+        }
+    })
 
     Column(
         modifier = modifier
@@ -120,7 +126,7 @@ fun PasswordInputFields(
     navController: NavHostController,
     signUpViewModel: SignUpViewModel
 ) {
-    val state by signUpViewModel.state.collectAsState()
+    val state by signUpViewModel.state.collectAsStateWithLifecycle()
 
     CustomOutLinedTextField(
         value = state.password,
@@ -132,7 +138,7 @@ fun PasswordInputFields(
         keyboardActions = KeyboardActions(
             onDone = {
                 if (state.password.length >= 6) {
-                    signUpViewModel.accountCreation()
+                    signUpViewModel.createAnAccount()
                     navController.navigate(route = Locations.LogIn.name)
                 }
             }
@@ -160,15 +166,14 @@ fun PasswordContinue(
     navController: NavHostController,
     signUpViewModel: SignUpViewModel
 ) {
-    val state by signUpViewModel.state.collectAsState()
+    val state by signUpViewModel.state.collectAsStateWithLifecycle()
 
     CustomFilledButton(
         buttonText = stringResource(R.string.sign_up_and_continue),
         modifier = modifier
     ) {
         if (state.password.length >= 6) {
-            signUpViewModel.accountCreation()
-            navController.navigate(route = Locations.LogIn.name)
+            signUpViewModel.createAnAccount()
         }
     }
 }

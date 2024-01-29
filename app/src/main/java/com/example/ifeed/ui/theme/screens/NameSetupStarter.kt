@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,13 +26,20 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import com.example.ifeed.BackgroundTask
 import com.example.ifeed.R
 import com.example.ifeed.business.SignUpViewModel
 import com.example.ifeed.ui.theme.components.CustomFilledButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedTextField
 import com.example.ifeed.ui.theme.components.CustomText
 import com.example.ifeed.ui.theme.navigation.Locations
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun NameSetupUi(
@@ -117,7 +123,7 @@ fun NameInputFields(
     textFiledColors: TextFieldColors,
     navController: NavHostController
 ) {
-    val state by signUpViewModel.state.collectAsState()
+    val state by signUpViewModel.state.collectAsStateWithLifecycle()
 
     CustomOutLinedTextField(
         value = state.firstName,
@@ -166,7 +172,7 @@ fun NameSetupContinue(
     navController: NavHostController,
     signUpViewModel: SignUpViewModel
 ) {
-    val state by signUpViewModel.state.collectAsState()
+    val state by signUpViewModel.state.collectAsStateWithLifecycle()
 
     CustomFilledButton(
         buttonText = stringResource(R.string.continue_buuton),
@@ -176,4 +182,24 @@ fun NameSetupContinue(
             navController.navigate(Locations.EmailOrNumber.name)
         }
     }
+}
+
+
+
+@OptIn(DelicateCoroutinesApi::class)
+fun performBackgroundTaskForNameSetup(navController: NavController) {
+
+    val backgroundTask = BackgroundTask()
+
+    val callBack = object : BackgroundTask.TaskCallBack {
+        override fun onResult(result: String) {
+            GlobalScope.launch(Dispatchers.Main) {
+                if (navController.currentBackStackEntry != null) {
+                    navController.navigate(Locations.EmailOrNumber.name)
+                }
+            }
+        }
+    }
+    
+    backgroundTask.performBackgroundTask(callBack)
 }
