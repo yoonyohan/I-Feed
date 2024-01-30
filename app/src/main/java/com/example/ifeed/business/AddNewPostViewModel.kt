@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ifeed.data.AppState
 import com.example.ifeed.data.NetworkRepository
+import com.example.ifeed.data.WritePost
 import dagger.Lazy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,13 @@ class AddNewPostViewModel @Inject constructor(
 ): ViewModel() {
     val state = appState
 
+    fun resetAlert() {
+        appState.update {
+            it.copy(
+                alert = ""
+            )
+        }
+    }
     fun addContentToState(value: String) {
         appState.update {
             it.copy(
@@ -27,9 +35,25 @@ class AddNewPostViewModel @Inject constructor(
         }
     }
 
-    fun writePost() {
-        viewModelScope.launch(Dispatchers.IO) {
-            networkRepository.get().writeNewPost()
+    suspend fun writePost() {
+        when(val result = networkRepository.get().writeNewPost()) {
+            is WritePost.PostCreationSuccess -> {
+                appState.update {
+                    it.copy(
+                        alert = "Posted",
+                        postCreationSuccess = true
+                    )
+                }
+            }
+
+            is WritePost.PostCreationError -> {
+                appState.update {
+                    it.copy(
+                        alert = result.errorMsg,
+                        postCreationSuccess = false
+                    )
+                }
+            }
         }
     }
 }

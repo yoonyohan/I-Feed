@@ -118,16 +118,8 @@ fun ContactInputField(
     val state by signUpViewModel.state.collectAsStateWithLifecycle()
 
     CustomOutLinedTextField(
-        value = if(state.emailAddressOn) {
-            state.email
-        } else if (state.phoneNumberOn) {
-            state.phoneNumber
-        }else {""},
-        placeHolder = if (state.emailAddressOn) {
-            stringResource(R.string.phone_number)
-        } else {
-            stringResource(R.string.email_address)
-        },
+        value = state.email,
+        placeHolder = stringResource(R.string.phone_number),
         keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.Words,
             imeAction = if (state.email.length >= 2 || state.phoneNumber.length >= 8) ImeAction.Done else ImeAction.None
@@ -150,11 +142,7 @@ fun ContactInputField(
             .fillMaxWidth()
             .padding(end = dimensionResource(id = R.dimen.row_text_field_padding)),
         onValueChange = {
-            if (state.emailAddressOn) {
-                signUpViewModel.addEmailOrPhoneNumberToState(it,"email")
-            } else if (state.phoneNumberOn) {
-                signUpViewModel.addEmailOrPhoneNumberToState(it,"phone")
-            }
+            signUpViewModel.addEmailOrPhoneNumberToState(it,)
         }
     )
 }
@@ -194,10 +182,7 @@ fun ContactChosen(
                 lineHeight = 30.sp
             ),
             modifier = modifier
-                .clickable {
-                    signUpViewModel.onEmail(true)
-                    signUpViewModel.onPhoneNumberOn(false)
-                }
+                .clickable {}
         )
     }
 
@@ -211,10 +196,7 @@ fun ContactChosen(
                 lineHeight = 30.sp
             ),
             modifier = modifier
-                .clickable {
-                    signUpViewModel.onPhoneNumberOn(true)
-                    signUpViewModel.onEmail(false)
-                }
+                .clickable {}
         )
     }
 }
