@@ -17,9 +17,9 @@ data class AppState(
     val profileUrl: String = "",
     val profileImageLoad: Boolean = false,
     val profileImageUrl: String = "",
+    val coverImageUrl: String = "",
     val emailAddressOn: Boolean = true,
     val phoneNumberOn: Boolean = false,
-    val toAccountCreation: Boolean = false,
     val updateProfileImageWithDataBases: Boolean = false,
     val alert: String = "",
     val isLoading: Boolean = false,
@@ -35,4 +35,7 @@ data class AppState(
     // Feed
     val postFireList: List<FeedPost> = emptyList(),
     val postIsLoading: Boolean = false,
+
+    // Sign Out
+    val signOut: Boolean = false
 )

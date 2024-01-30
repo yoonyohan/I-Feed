@@ -10,6 +10,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -17,22 +18,23 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import javax.inject.Singleton
 
 interface NetworkRepository {
-    suspend fun logIn()
-    suspend fun accountCreation()
-    suspend fun updateAccountDataLive()
+    suspend fun logIn(fieldsNotEmpty: Boolean, userName: String, password: String): LogInStages
+    suspend fun accountCreation(email: String = "", password: String): AccountCreationStages
+    suspend fun updateAccountDataLive(): AccountCreationStages
     suspend fun updateAccountDataNormal()
-    suspend fun addProfileImage(uri: Uri)
+    suspend fun addProfileImage(uri: Uri): AddImage
     suspend fun updateProfileImageRealNormal()
-    suspend fun writeNewPost()
+    suspend fun getProfileImageUrl(): String
+    suspend fun writeNewPost(): WritePost
     fun readAllPosts(completion: (List<FeedPost>) -> Unit)
 }
 
@@ -44,30 +46,18 @@ class FireNetWorkRepository @Inject constructor(
     private val _appState: MutableStateFlow<AppState>,
     private val feedApplication: MyFeedApplication
 ) : NetworkRepository {
-    override suspend fun logIn() {
-        withContext(Dispatchers.IO) {
-            if (_appState.value.userName.isEmpty() && _appState.value.password.isEmpty()) {
-                _appState.update {
-                    it.copy(
-                        isEmpty = true,
-                        alert = "Input Fields cannot be empty"
-                    )
-                }
+    override suspend fun logIn( fieldsNotEmpty: Boolean, userName: String, password: String): LogInStages {
+        return withContext(Dispatchers.IO) {
+            val deferred = CompletableDeferred<LogInStages>()
+            if (fieldsNotEmpty) {
+                deferred.complete(LogInStages.LogInError("Input Fields cannot be empty"))
             } else {
-                try {
-                    withContext(Dispatchers.IO) {
-                        firebaseAuth.signInWithEmailAndPassword(
-                            _appState.value.userName,
-                            _appState.value.password
-                        ).addOnCompleteListener {
+                withContext(Dispatchers.IO) {
+                    firebaseAuth.signInWithEmailAndPassword( userName, password)
+                        .addOnCompleteListener {
                                 task ->
                             if (task.isSuccessful) {
-                                _appState.update {
-                                    it.copy(
-                                        alert = "Welcome back!",
-                                        isLoggedIn = true,
-                                    )
-                                }
+                                deferred.complete(LogInStages.LogInSuccess)
                             }
                         }.addOnFailureListener { exception ->
                             // Handle specific login exceptions
@@ -77,171 +67,64 @@ class FireNetWorkRepository @Inject constructor(
                                 else -> "Authentication failed: ${exception.message ?: "Something went wrong"}"
                             }
 
-                            _appState.update {
-                                it.copy(
-                                    alert = errorMessage,
-                                    isLoggedIn = false,
-                                )
-                            }
+                            deferred.complete(LogInStages.LogInError(errorMessage))
                         }
-                    }
-
-                } catch (e: Exception) {
-                    // Handle other exceptions if needed
-                    _appState.update {
-                        it.copy(
-                            alert = "Something went wrong",
-                            isLoggedIn = false,
-                        )
-                    }
                 }
             }
+
+            deferred.await()
         }
     }
-    override suspend fun accountCreation() {
-        withContext(Dispatchers.IO) {
-            try {
-                if (_appState.value.emailAddressOn) { // If User Select email
-                    Log.d("Network Repository", "App state values check : ${_appState.value.email} and ${_appState.value.password}")
-                    firebaseAuth.createUserWithEmailAndPassword(_appState.value.email, _appState.value.password)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                _appState.update {
-                                    it.copy(
-                                        email = "", password = "", isLoading = true, toLoggedIn = true, accountCreationSuccess = false, toAccountCreation = true
-                                    )
-                                }
-                            } else {
-                                _appState.update {
-                                    it.copy(
-                                        alert = feedApplication.getString(R.string.problem_with_creating_an_account),
-                                        isLoading = true
-                                    )
-                                }
-                            }
+    override suspend fun accountCreation(email: String, password: String): AccountCreationStages {
+        return withContext(Dispatchers.IO) {
+            val deferred = CompletableDeferred<AccountCreationStages>()
+            Log.d("Network Repository", "App state values check : $email and $password")
+            firebaseAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        deferred.complete(AccountCreationStages.AccountCreationSuccess)
+                    } else {
+                        val errorMessage = task.exception?.localizedMessage ?: "Unknown error"
+                        Log.e("NetworkRepository", errorMessage)
+                        deferred.complete(AccountCreationStages.AccountCreationError(errorMessage))
+                    }
 
-                        }.addOnFailureListener { exception ->
-                            val errorMessage : String = when(exception) {
-                                is FirebaseAuthWeakPasswordException -> "Weak password. Please choose a stronger one."
-                                is FirebaseAuthInvalidCredentialsException -> "Invalid Email"
-                                is FirebaseAuthUserCollisionException -> "Account already exist for this email address"
-                                else -> "Problem with creating an account"
-                            }
-                            _appState.update {
-                                it.copy(alert = errorMessage, isLoading = true)
-                            }
-                        }
+                }.addOnFailureListener { exception ->
+                    val errorMessage : String = when(exception) {
+                        is FirebaseAuthWeakPasswordException -> "Weak password. Please choose a stronger one."
+                        is FirebaseAuthInvalidCredentialsException -> "Invalid Email"
+                        is FirebaseAuthUserCollisionException -> "Account already exist for this email address"
+                        else -> "Problem with creating an account"
+                    }
+                    deferred.complete(AccountCreationStages.AccountCreationError(errorMessage))
                 }
-
-                if (_appState.value.phoneNumberOn) { // If user select phone number
-                    firebaseAuth.createUserWithEmailAndPassword(_appState.value.phoneNumber, _appState.value.password)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                _appState.update {
-                                    it.copy(phoneNumber = "", password = "", isLoading = true, toLoggedIn = true, accountCreationSuccess = false, toAccountCreation = true)
-                                    // userData update function to real time data base
-                                }
-                            } else {
-                                _appState.update {
-                                    it.copy(
-                                        alert = feedApplication.getString(R.string.problem_with_creating_an_account),
-                                        isLoading = true
-                                    )
-                                }
-                            }
-
-                        }.addOnFailureListener { exception ->
-                            val errorMessage: String = when(exception) {
-                                is FirebaseAuthWeakPasswordException -> "Weak password. Please choose a stronger one"
-                                is FirebaseAuthInvalidCredentialsException -> "Invalid Phone number"
-                                is FirebaseAuthUserCollisionException -> "Account already exist for this phone number"
-                                else -> "Problem with creation an account"
-                            }
-                            _appState.update {
-                                it.copy(alert = errorMessage, isLoading = true)
-                            }
-                        }
-                }
-
-            } catch (e: Exception) {
-                Log.e("NetworkRepository", "Problem with authentication", e)
-                _appState.update {
-                    it.copy(
-                        alert = feedApplication.getString(R.string.problem_with_creating_an_account),
-                        isLoading = true,
-                        toLoggedIn = false,
-                        accountCreationSuccess = false
-                    )
-                }
-            }
+            deferred.await()
         }
     }
-    override suspend fun updateAccountDataLive() {
-        withContext(Dispatchers.IO) {
-            try {
-                val currentUser = firebaseAuth.currentUser
-
-                if (currentUser != null) {
-                    val userId = currentUser.uid
-                    val realTimeRef = fireRealTime.reference.child("account").child(userId)
-                    val accountModel = Account(
-                        name = firestore.collection("userData").document(userId).get().await().getString("fullName") ?: "",
-                        userId = userId,
-                        profileImageUrl = "",
-                        coverImageUrl = ""
-                    )
-                    realTimeRef.setValue(accountModel)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                _appState.update {
-                                    it.copy(
-                                        accountCreationSuccess = true,
-                                        isLoading = false,
-                                        toAccountCreation = false,
-                                        toLoggedIn = false,
-                                        alert = feedApplication.getString(R.string.successfully_created_an_account)
-                                    )
-                                }
-                                firebaseAuth.signOut()
-                            } else {
-                                _appState.update {
-                                    it.copy(
-                                        accountCreationSuccess = false,
-                                        isLoading = true,
-                                        toLoggedIn = true,
-                                        toAccountCreation = true,
-                                        alert = feedApplication.getString(R.string.let_s_finish_account_later)
-                                    )
-                                }
-                            }
-                        }.addOnFailureListener {
-                            _appState.update {
-                                it.copy(
-                                    accountCreationSuccess = false,
-                                    isLoading = true,
-                                    toLoggedIn = true,
-                                    toAccountCreation = true,
-                                    alert = feedApplication.getString(R.string.let_s_finish_account_later)
-                                )
-                            }
-                        }
-                }
-            } catch (e: Exception) {
-                Log.e("NetworkRepository", "Problem with update account data", e)
-                _appState.update {
-                    it.copy(
-                        accountCreationSuccess = false,
-                        isLoading = true,
-                        toLoggedIn = true,
-                        toAccountCreation = true,
-                        alert = feedApplication.getString(R.string.let_s_finish_account_later)
-                    )
-                }
+    override suspend fun updateAccountDataLive(): AccountCreationStages {
+        return withContext(Dispatchers.IO) {
+            val deferred = CompletableDeferred<AccountCreationStages>()
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser != null) {
+                val userId = currentUser.uid
+                val realTimeRef = fireRealTime.reference.child("account").child(userId)
+                val accountModel = Account(
+                    name = firestore.collection("userData").document(userId).get().await().getString("fullName") ?: "",
+                    userId = userId,
+                    profileImageUrl = "",
+                    coverImageUrl = ""
+                )
+                realTimeRef.setValue(accountModel)
+                    .addOnFailureListener {
+                        deferred.complete(AccountCreationStages.AccountCreationError(feedApplication.getString(R.string.let_s_finish_account_later)))
+                    }
             }
+            deferred.await()
         }
     }
     override suspend fun updateAccountDataNormal() {
         withContext(Dispatchers.IO) {
+            CompletableDeferred<AccountCreationStages>()
             try {
                 val currentUser = firebaseAuth.currentUser
                 if (currentUser != null) {
@@ -250,6 +133,8 @@ class FireNetWorkRepository @Inject constructor(
                         "firstName" to _appState.value.firstName,
                         "lastName" to _appState.value.lastName,
                         "middleName" to _appState.value.middleName,
+                        "profileImageUrl" to _appState.value.profileImageUrl,
+                        "coverImageUrl" to _appState.value.coverImageUrl,
                         "fullName" to "${_appState.value.firstName} ${_appState.value.lastName}",
                         "userName" to _appState.value.userName,
                         "profileUrl" to _appState.value.profileUrl
@@ -259,7 +144,6 @@ class FireNetWorkRepository @Inject constructor(
                         .set(userData)
                         .addOnSuccessListener {
                             Log.d(ContentValues.TAG, "DocumentSnapshot successfully written!")
-                            _appState.update { it.copy(toAccountCreation = true) }
                         }.addOnFailureListener {
                                 e ->
                             Log.w(ContentValues.TAG, "Error writing document", e)
@@ -272,53 +156,34 @@ class FireNetWorkRepository @Inject constructor(
             }
         }
     }
-    override suspend fun addProfileImage(uri: Uri) {
-        withContext(Dispatchers.IO) {
-            try {
-                val currentUser = firebaseAuth.currentUser
+    override suspend fun addProfileImage(uri: Uri): AddImage {
+        return withContext(Dispatchers.IO) {
+            val deferred = CompletableDeferred<AddImage>()
+            val currentUser = firebaseAuth.currentUser
 
-                if (currentUser != null) {
-                    val userId = currentUser.uid
-                    val nameForModel = firestore.collection("userData").document(userId).get().await().getString("fullName") ?: ""
-                    val userIdForModel = userId
-                    // First you show set the profile url to the fireStore userData collection
+            if (currentUser != null) {
+                val userId = currentUser.uid
 
-                    val storageRef = fireStorage.reference.child("profile_images/$userId.jpg")
-                    storageRef.putFile(uri)
-                        .addOnCompleteListener {task ->
-                            if (task.isSuccessful) {
-                                _appState.update {
-                                    it.copy(
-                                        updateProfileImageWithDataBases = true,
-                                        profileImageLoad = true
-                                    )
-                                }
-                            } else {
-                                _appState.update {
-                                    it.copy(
-                                        alert = feedApplication.getString(R.string.error_uploading_image),
-                                        updateProfileImageWithDataBases = false
-                                    )
-                                }
-                            }
-                        }.addOnFailureListener { // Needs to handle exceptions here
-                            _appState.update {
+                val storageRef = fireStorage.reference.child("profile_images/$userId.jpg")
+                storageRef.putFile(uri)
+                    .addOnCompleteListener {task ->
+                        if (task.isSuccessful) {
+                            deferred.complete(AddImage.ImageAddSuccess)
+                            _appState.update { // 1
                                 it.copy(
-                                    alert = feedApplication.getString(R.string.error_uploading_image),
-                                    updateProfileImageWithDataBases = false
+                                    updateProfileImageWithDataBases = true,
+                                    profileImageLoad = true
                                 )
                             }
+                        } else {
+                            deferred.complete(AddImage.ImageAddError(feedApplication.getString(R.string.error_uploading_image)))
                         }
-                }
-            } catch (e: Exception) {
-                Log.e("NetworkRepository", "Problem with uploading profile image", e)
-                _appState.update {
-                    it.copy(
-                        alert = feedApplication.getString(R.string.error_uploading_image),
-                        updateProfileImageWithDataBases = false
-                    )
-                }
+                    }.addOnFailureListener { // Needs to handle exceptions here
+                        deferred.complete(AddImage.ImageAddError(feedApplication.getString(R.string.error_uploading_image)))
+                    }
             }
+
+            deferred.await()
         }
     }
     override suspend fun updateProfileImageRealNormal() {
@@ -335,15 +200,12 @@ class FireNetWorkRepository @Inject constructor(
                         val realTimeRef = fireRealTime.reference
                         val propertyName = "profileImageUrl"
 
-                        val upDatedMap = mapOf<String, Any>(propertyName to imageUri)
-                        realTimeRef.child("userData").child(userId).updateChildren(upDatedMap)
-                            .addOnCompleteListener {task ->
+                        val updateTag = hashMapOf<String, Any>(propertyName to imageUri.toString())
+
+                        realTimeRef.child("account").child(userId).updateChildren(updateTag)
+                            .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    _appState.update {
-                                        it.copy(
-                                            profileImageUrl = imageUri.toString()
-                                        )
-                                    }
+                                    Log.d("NetworkRepository", "Profile image real time update completed")
                                 } else {
                                     Log.e("NetworkRepository", "Profile image real time update failed")
                                 }
@@ -351,15 +213,10 @@ class FireNetWorkRepository @Inject constructor(
                                 Log.e("NetworkRepository", "Profile image real time update failed", it)
                             }
 
-                        firestore.collection("userData").document(userId).update("profileImageUrl",imageUri)
+                        firestore.collection("userData").document(userId).update("profileImageUrl",imageUri.toString())
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful)  {
-                                    _appState.update {
-                                        it.copy(
-                                            profileImageLoad = false,
-                                            updateProfileImageWithDataBases = false
-                                        )
-                                    }
+                                    Log.d("NetworkRepository", "Profile image firestore update completed")
                                 }
                             }
                             .addOnFailureListener {
@@ -379,8 +236,29 @@ class FireNetWorkRepository @Inject constructor(
             }
         }
     }
-    override suspend fun writeNewPost() {
-        withContext(Dispatchers.IO) {
+    override suspend fun getProfileImageUrl(): String {
+        return withContext(Dispatchers.IO) {
+            val current = firebaseAuth.currentUser
+            val differed = CompletableDeferred<String>()
+            if (current != null) {
+                val userId = current.uid
+                val storageRef = fireStorage.reference
+                val imageRef = storageRef.child("profile_images/$userId.jpg")
+
+                imageRef.downloadUrl.addOnSuccessListener { imageUri ->
+                    differed.complete(imageUri.toString())
+                }.addOnFailureListener { // You should handle the exceptions
+                    Log.e("NetworkRepository", "Problem with getting image uri", it)
+                }
+            } else {
+                Log.e("NetworkRepository", "You should log first")
+            }
+            differed.await()
+        }
+    }
+    override suspend fun writeNewPost(): WritePost {
+        return withContext(Dispatchers.IO) {
+            val deferred = CompletableDeferred<WritePost>()
             val currentUser = firebaseAuth.currentUser
 
             if (currentUser != null) {
@@ -396,33 +274,20 @@ class FireNetWorkRepository @Inject constructor(
 
                 val newPostRef = postRef.push()
                 newPostRef.setValue(postModel)
-                    .addOnCompleteListener {
-                            task ->
+                    .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            _appState.update {
-                                it.copy(
-                                    alert = "Posted",
-                                    postCreationSuccess = true
-                                )
-                            }
+                            deferred.complete(WritePost.PostCreationSuccess)
                         }
-                    }.addOnFailureListener {
-                            exception ->
+                    }.addOnFailureListener { exception ->
                         val errorMessage = when (exception) {
                             is FirebaseFirestoreException -> "Firebase realtime exception: ${exception.message ?: "Something went wrong"}"
                             else -> "Failed to create post: ${exception.message ?: "Something went wrong"}"
                         }
-
-                        _appState.update {
-                            it.copy(
-                                alert = errorMessage,
-                                postCreationSuccess = false
-                            )
-                        }
-
+                        deferred.complete(WritePost.PostCreationError(errorMessage))
                         Log.e("AddNewPost","Firestore exception", exception)
                     }
             }
+            deferred.await()
         }
     }
     override fun readAllPosts(completion: (List<FeedPost>) -> Unit) {
@@ -462,3 +327,24 @@ data class FeedPost(
     val content: String = "",
     val timestamp: Long = 0
 )
+
+
+sealed class AccountCreationStages {
+    data object AccountCreationSuccess: AccountCreationStages()
+    data class AccountCreationError(val errorMessage: String): AccountCreationStages()
+}
+
+sealed class LogInStages {
+    data object LogInSuccess: LogInStages()
+    data class LogInError(val errorMsg: String): LogInStages()
+}
+
+sealed class AddImage {
+    data object ImageAddSuccess: AddImage()
+    data class ImageAddError(val errorMsg: String): AddImage()
+}
+
+sealed class WritePost {
+    data object PostCreationSuccess: WritePost()
+    data class PostCreationError(val errorMsg: String): WritePost()
+}

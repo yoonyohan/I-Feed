@@ -16,9 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -38,7 +36,7 @@ import com.example.ifeed.ui.theme.components.CustomFilledButton
 import com.example.ifeed.ui.theme.components.CustomOutLinedTextField
 import com.example.ifeed.ui.theme.components.CustomText
 import com.example.ifeed.ui.theme.navigation.Locations
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -63,11 +61,12 @@ fun PasswordSetupUi(
         }
     }
 
-    LaunchedEffect(key1 = state.accountCreationSuccess, block = {
-        if (state.accountCreationSuccess) {
+    LaunchedEffect(state.toLoggedIn) {
+        Log.d("LaunchedEffect", "LaunchedEffect triggered with toLoggedIn=${state.toLoggedIn}")
+        if (state.toLoggedIn) {
             navController.navigate(route = Locations.LogIn.name)
         }
-    })
+    }
 
     Column(
         modifier = modifier
@@ -113,7 +112,6 @@ fun PasswordSetupUi(
 
         PasswordContinue(
             modifier = modifier,
-            navController = navController,
             signUpViewModel = signUpViewModel
         )
     }
@@ -127,6 +125,7 @@ fun PasswordInputFields(
     signUpViewModel: SignUpViewModel
 ) {
     val state by signUpViewModel.state.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
 
     CustomOutLinedTextField(
         value = state.password,
@@ -137,9 +136,10 @@ fun PasswordInputFields(
         ),
         keyboardActions = KeyboardActions(
             onDone = {
-                if (state.password.length >= 6) {
-                    signUpViewModel.createAnAccount()
-                    navController.navigate(route = Locations.LogIn.name)
+                coroutineScope.launch(Dispatchers.IO) {
+                    if (state.password.length >= 6) {
+                        signUpViewModel.createAnAccount()
+                    }
                 }
             }
         ),
@@ -163,17 +163,19 @@ fun PasswordInputFields(
 @Composable
 fun PasswordContinue(
     modifier: Modifier = Modifier,
-    navController: NavHostController,
     signUpViewModel: SignUpViewModel
 ) {
     val state by signUpViewModel.state.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
 
     CustomFilledButton(
         buttonText = stringResource(R.string.sign_up_and_continue),
         modifier = modifier
     ) {
-        if (state.password.length >= 6) {
-            signUpViewModel.createAnAccount()
+        coroutineScope.launch(Dispatchers.IO) {
+            if (state.password.length >= 6) {
+                signUpViewModel.createAnAccount()
+            }
         }
     }
 }

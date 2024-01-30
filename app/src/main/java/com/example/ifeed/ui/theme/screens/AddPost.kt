@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.ifeed.R
 import com.example.ifeed.business.AddNewPostViewModel
@@ -38,21 +39,19 @@ fun AddPostUi(
     addNewPostViewModel: AddNewPostViewModel,
     alert: (String) -> Unit
 ) {
-    val state by addNewPostViewModel.state.collectAsState()
+    val state by addNewPostViewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(state.alert) {
-        state.alert?.let {
-            if (it.isNotEmpty()) {
-                alert(it)
-            }
+        if (state.alert.isNotEmpty()) {
+            alert(state.alert)
+            addNewPostViewModel.resetAlert() // Reset flag for next reaction
         }
     }
 
-    DisposableEffect(state.postCreationSuccess) {
+    LaunchedEffect(state.postCreationSuccess) {
         if (state.postCreationSuccess) {
             navController.navigate(route = Locations.Feed.name)
         }
-        onDispose {  }
     }
 
     Column(
@@ -83,7 +82,7 @@ fun AddPostInputFields(
     modifier: Modifier = Modifier,
     addPostViewModel: AddNewPostViewModel
 ) {
-    val state by addPostViewModel.state.collectAsState()
+    val state by addPostViewModel.state.collectAsStateWithLifecycle()
 
     CustomOutLinedTextField(
         value = state.content,
@@ -114,7 +113,11 @@ fun PostButton(
     modifier: Modifier = Modifier,
     addNewPostViewModel: AddNewPostViewModel,
 ) {
+    val coroutineScope = rememberCoroutineScope()
+
     CustomFilledButton(buttonText = "Post", modifier = modifier) {
-        addNewPostViewModel.writePost()
+        coroutineScope.launch(Dispatchers.IO) {
+            addNewPostViewModel.writePost()
+        }
     }
 }

@@ -142,9 +142,7 @@ fun LogInInputFields(
             imeAction = if (state.password.length > 3) ImeAction.Done else ImeAction.None
         ),
         keyboardActions = KeyboardActions(
-            onNext = {
-                navController.navigate(route = Locations.Feed.name)
-            }
+            onNext = {}
         ),
         colors = textFieldColors,
     ) {

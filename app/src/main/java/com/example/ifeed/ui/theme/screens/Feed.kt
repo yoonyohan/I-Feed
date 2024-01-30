@@ -29,7 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +38,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.ifeed.business.FeedViewModel
 import com.example.ifeed.data.FeedPost
@@ -48,7 +49,13 @@ import com.example.ifeed.ui.theme.navigation.Locations
 
 @Composable
 fun FeedUi(modifier: Modifier = Modifier, navController: NavHostController, feedViewModel: FeedViewModel) {
-    val state by feedViewModel.state.collectAsState()
+    val state by feedViewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(key1 = state.signOut, block = {
+        if (state.signOut) {
+            navController.navigate(Locations.LogIn.name)
+        }
+    })
 
    Column(modifier = modifier.fillMaxSize()) {
        Scaffold(
@@ -72,7 +79,7 @@ fun BottomAppBar(modifier: Modifier = Modifier, navController: NavHostController
             AccountIcon(navController)
             NotificationIcon(navController)
             MessagesIcon(navController)
-            RefreshIcon(feedViewModel)
+            RefreshIcon(feedViewModel,navController)
         },
         floatingActionButton = { FabIcon(navController) },
         containerColor = Color.Black,
@@ -119,10 +126,10 @@ fun MessagesIcon(navController: NavHostController) {
     }
 }
 @Composable
-fun RefreshIcon(feedViewModel: FeedViewModel) {
+fun RefreshIcon(feedViewModel: FeedViewModel, navController: NavHostController) {
     IconButton(
         onClick = {
-            feedViewModel.readAllPosts()
+            feedViewModel.signOut()
         }
     ) {
         Icon(
@@ -134,11 +141,16 @@ fun RefreshIcon(feedViewModel: FeedViewModel) {
 @Composable
 fun PostCard(feedPost: FeedPost, feedViewModel: FeedViewModel, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors( containerColor = MaterialTheme.colorScheme.background)
     ) {
         Column(
-            modifier = modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = 20.dp, vertical = 20.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(horizontal = 20.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
             Row(modifier = modifier.fillMaxWidth(1f), horizontalArrangement = Arrangement.SpaceBetween) {

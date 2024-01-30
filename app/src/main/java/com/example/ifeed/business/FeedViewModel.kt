@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ifeed.data.AppState
 import com.example.ifeed.data.NetworkRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.Lazy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class FeedViewModel @Inject constructor(
     private val networkRepository: Lazy<NetworkRepository>,
-    private val _appState: MutableStateFlow<AppState>
+    private val _appState: MutableStateFlow<AppState>,
+    private val firebaseAuth: FirebaseAuth
 ): ViewModel() {
     val state = _appState
     init {
@@ -32,6 +34,15 @@ class FeedViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    fun signOut() { // Temporary function
+        firebaseAuth.signOut()
+        _appState.update {
+            it.copy(
+                signOut = true
+            )
         }
     }
 }

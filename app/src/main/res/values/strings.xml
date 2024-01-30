@@ -23,4 +23,5 @@
     <string name="successfully_created_an_account">Successfully created an account</string>
     <string name="let_s_finish_account_later">Let\'s finish account later</string>
     <string name="error_uploading_image">Error uploading image</string>
+    <string name="something_went_wrong">Something went wrong</string>
 </resources>
